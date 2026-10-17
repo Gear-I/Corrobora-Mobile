@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Corrobora Mobile: never commit evidence or device data
+/evidence/
+*.evidence/
+corrobora.toml
