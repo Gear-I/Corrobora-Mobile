@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/Logo_Icon/Corrobora_Mobile_logo.png" alt="Corrobora Mobile logo" width="220">
+</p>
+
 # Corrobora Mobile
 
 ### Open-Source iOS & Android Full-File-System Forensic Acquisition Framework
