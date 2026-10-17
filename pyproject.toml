@@ -1,0 +1,39 @@
+# Corrobora Mobile — project metadata.
+#
+# Runtime dependencies: none (Python standard library only).
+# Build backend (only needed for `pip install`): setuptools.
+# Tests use the standard-library `unittest` runner and do not require
+# installation:
+#   PYTHONPATH=src python -m unittest discover -s tests -t .        (Linux/macOS)
+#   $env:PYTHONPATH="src"; python -m unittest discover -s tests -t . (PowerShell)
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "corrobora-mobile"
+dynamic = ["version"]
+description = "Open-source mobile filesystem forensic acquisition framework (pre-alpha research software)."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Corrobora Technologies LLC" }]
+dependencies = []
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Operating System :: OS Independent",
+    "Topic :: Security",
+]
+
+[project.urls]
+Homepage = "https://github.com/Gear-I/Corrobora-Mobile"
+
+[tool.setuptools.dynamic]
+version = { attr = "corrobora_mobile.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
