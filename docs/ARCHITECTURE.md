@@ -154,9 +154,8 @@ This builds on the structure proposed in `README.md` and adds the
 `audit`, `compatibility`, and `detection` packages that CLAUDE.md
 Section 10 requires to be kept separate. [DESIGN]
 
-The language is **Python**, inferred from the existing Python
-`.gitignore`. UNVERIFIED: This claim requires additional research or
-testing. — Python is not yet a confirmed project decision (see Section 7).
+The language is **Python 3.12 or later** (decided 2026-10-16; see
+Section 7.3).
 
 ```text
 Corrobora-Mobile/
@@ -468,17 +467,17 @@ forensic-validation records exist in `docs/VALIDATION.md`.
 | Capturing `tar` stderr may require writing to the device | Device modification | Research question 3; prefer host-side capture |
 | `adb root` changes device state | Must be disclosed | Declared modification; acknowledged before running |
 | iOS pairing modifies the device | Detection is not read-only on iOS | iOS detection is excluded from M1 |
-| pymobiledevice3 is GPL-3.0 [VERIFIED-SOURCE]; this project is MIT | License compatibility for any iOS integration | Decision required before adoption. I'm not a lawyer. Seek legal review. |
+| pymobiledevice3 is GPL-3.0 [VERIFIED-SOURCE]; this project is MIT | License compatibility for any iOS integration | Decision deferred until iOS work begins (Section 7.3). Legal review recommended before adoption. |
 | No open method exists for current iOS on A12+ | The iOS FFS goal may be infeasible with public techniques | State this openly; iOS work begins with research, not code |
 
 ### 7.2 Unresolved Questions
 
-1. Is Python the confirmed implementation language, and which minimum
-   version?
-2. Which host OS is supported first? The developer machine is Windows. ADB
-   runs on Windows, Linux, and macOS. UNVERIFIED: This claim requires
-   additional research or testing. — behavior parity across hosts has not
-   been tested.
+1. ~~Is Python the confirmed implementation language, and which minimum
+   version?~~ **Resolved:** Python 3.12+ (Section 7.3).
+2. ~~Which host OS is supported first?~~ **Resolved:** Windows first, with
+   device-free unit tests also run on Linux in CI (Section 7.3).
+   UNVERIFIED: This claim requires additional research or testing. —
+   behavior parity across hosts has not been tested.
 3. Can `adb exec-out` carry a binary tar stream reliably, while
    capturing on-device stderr separately and without writing to the device?
    UNVERIFIED: This claim requires additional research or testing.
@@ -490,12 +489,28 @@ forensic-validation records exist in `docs/VALIDATION.md`.
    UNVERIFIED: This claim requires additional research or testing.
 6. What are the exact device-side effects of iOS pairing?
 7. What are the licenses and terms of use for the public reference datasets
-   (Digital Corpora / Joshua Hickman images)? Not yet confirmed.
-8. What authorized physical research devices will be available, if any (e.g. an A11-or-earlier
-   iPhone, or a Pixel with an unlockable bootloader)?
+   (Digital Corpora / Joshua Hickman images)? **Partly answered:** the
+   Digital Corpora terms of use place the site's original materials under
+   CC0 1.0 and exclude copyrighted material inside disk images
+   [VERIFIED-SOURCE]. The terms base CC0 on the materials being produced
+   by US government staff. UNVERIFIED: This claim requires additional
+   research or testing. — whether CC0 covers the contributed Joshua
+   Hickman images has not been confirmed.
+8. ~~What authorized physical research devices will be available?~~
+   **Resolved for now:** none. M1 is emulator-only; physical devices will
+   be decided later (Section 7.3).
 9. For locked or unmodified devices: which documented, lawful,
    reproducible methods exist at all for current OS versions? This is
    open research. No feasibility is assumed.
+
+### 7.3 Decisions Recorded
+
+| Date | Decision | Notes |
+|------|----------|-------|
+| 2026-10-16 | Implementation language: Python, minimum version 3.12 | Matches the existing Python `.gitignore`. |
+| 2026-10-16 | Host OS: Windows first; device-free unit tests also run on Linux in CI | Emulator integration tests run on the developer's Windows machine. |
+| 2026-10-16 | Physical research devices: none for now | M1 is emulator-only. |
+| 2026-10-16 | GPL-3.0 dependencies (e.g. pymobiledevice3): decision deferred | Revisit when iOS work begins; legal review recommended. Not needed for M1. |
 
 ---
 
@@ -588,3 +603,5 @@ yet been reviewed by this project.
   https://www.nist.gov/document/cftt-md-smart-phone-tool-specification
 - Digital Corpora, Android 13 image (Joshua Hickman):
   https://digitalcorpora.org/corpora/cell-phones/android-13-image/
+- Digital Corpora, Terms of Use:
+  https://digitalcorpora.org/terms-of-use/
