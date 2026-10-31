@@ -4,6 +4,7 @@ from corrobora_mobile.core.enums import (
     AcquisitionClass,
     AuditEntryType,
     AuditLogState,
+    CheckState,
     CompletenessStatus,
     ContentReliability,
     EntryOutcome,
@@ -31,6 +32,9 @@ class AcquisitionClassOrderTests(unittest.TestCase):
 
 class VocabularyTests(unittest.TestCase):
     """Enum values are written into evidence verbatim; pin them."""
+
+    def test_check_states(self):
+        self.assertEqual({s.value for s in CheckState}, {"PASS", "FAIL", "NOT_EVALUATED"})
 
     def test_validation_statuses_match_project_instructions(self):
         self.assertEqual(
