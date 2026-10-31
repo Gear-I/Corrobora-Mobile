@@ -45,8 +45,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import ntpath
 import os
 import platform
+import re
 import shutil
 import stat
 import subprocess
@@ -66,6 +68,7 @@ from corrobora_mobile.evidence import EvidencePackage  # noqa: E402
 DATA_PATH = "data/input.bin"
 READ_BLOCK = 1024 * 1024
 FILE_ATTRIBUTE_READONLY = 0x1
+SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
 PASS, FAIL, SKIPPED, INCONCLUSIVE = "PASS", "FAIL", "SKIPPED", "INCONCLUSIVE"
 
 
@@ -100,43 +103,89 @@ class ExternalHasher:
             elif tool == "shasum -a 256":
                 out[tool] = _first_line(["shasum", "--version"])
             elif tool == "PowerShell Get-FileHash":
-                out[tool] = "PowerShell " + _first_line(
-                    ["powershell", "-NoProfile", "-Command", "$PSVersionTable.PSVersion.ToString()"]
-                )
+                version = _first_line(_powershell_cmd("$PSVersionTable.PSVersion.ToString()"),
+                                      env=windows_powershell_env())
+                out[tool] = f"Windows PowerShell {version} ({_powershell_cmd('')[0]})"
             else:
-                out[tool] = "certutil (Windows built-in)"
+                out[tool] = f"certutil ({_windows_exe('certutil.exe')})"
         return out
 
     @staticmethod
     def _run(tool: str, path: Path) -> str:
         if tool == "sha256sum":
             text = _check_output(["sha256sum", "--", str(path)])
-            return text.split()[0].lower()
-        if tool == "shasum -a 256":
+            value = text.split()[0] if text.split() else ""
+        elif tool == "shasum -a 256":
             text = _check_output(["shasum", "-a", "256", str(path)])
-            return text.split()[0].lower()
-        if tool == "certutil -hashfile":
-            text = _check_output(["certutil", "-hashfile", str(path), "SHA256"])
+            value = text.split()[0] if text.split() else ""
+        elif tool == "certutil -hashfile":
+            text = _check_output([_windows_exe("certutil.exe"), "-hashfile", str(path), "SHA256"])
             # Line 2 holds the hash; older Windows versions separate bytes with spaces.
-            return text.splitlines()[1].replace(" ", "").strip().lower()
-        if tool == "PowerShell Get-FileHash":
+            lines = text.splitlines()
+            value = lines[1].replace(" ", "") if len(lines) > 1 else ""
+        elif tool == "PowerShell Get-FileHash":
             literal = str(path).replace("'", "''")
             text = _check_output(
-                ["powershell", "-NoProfile", "-Command",
-                 f"(Get-FileHash -Algorithm SHA256 -LiteralPath '{literal}').Hash"]
+                _powershell_cmd(f"(Get-FileHash -Algorithm SHA256 -LiteralPath '{literal}').Hash"),
+                env=windows_powershell_env(),
             )
-            return text.strip().lower()
-        raise ValueError(tool)
+            value = text
+        else:
+            raise ValueError(tool)
+        value = value.strip().lower()
+        if not SHA256_HEX.match(value):
+            raise RuntimeError(f"{tool}: unexpected output for {path}: {text!r}")
+        return value
 
 
-def _check_output(cmd: list[str]) -> str:
-    return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
+def _windows_exe(*parts: str) -> str:
+    """Full path under %SystemRoot%\\System32, so PATH cannot substitute another program."""
+    root = os.environ.get("SystemRoot", r"C:\Windows")
+    return ntpath.join(root, "System32", *parts)
 
 
-def _first_line(cmd: list[str]) -> str:
+def _powershell_cmd(command: str) -> list[str]:
+    return [_windows_exe("WindowsPowerShell", "v1.0", "powershell.exe"),
+            "-NoProfile", "-NonInteractive", "-Command", command]
+
+
+def windows_powershell_env(base: dict[str, str] | None = None) -> dict[str, str]:
+    """Environment for Windows PowerShell 5.1 with only its own module folders.
+
+    When this script is started from PowerShell 7, the inherited PSModulePath
+    lists PowerShell 7's module folders first. Windows PowerShell 5.1 then
+    fails to load its built-in Microsoft.PowerShell.Utility module and
+    reports Get-FileHash as "not recognized". Restricting PSModulePath to
+    the Windows PowerShell folders also stops user-installed modules from
+    replacing the built-in cmdlet.
+    """
+    env = dict(os.environ if base is None else base)
+    system_root = env.get("SystemRoot", r"C:\Windows")
+    program_files = env.get("ProgramFiles", r"C:\Program Files")
+    env["PSModulePath"] = ";".join([
+        ntpath.join(system_root, "System32", "WindowsPowerShell", "v1.0", "Modules"),
+        ntpath.join(program_files, "WindowsPowerShell", "Modules"),
+    ])
+    return env
+
+
+def _check_output(cmd: list[str], env: dict[str, str] | None = None) -> str:
+    """Run a command; on failure, raise with its exit status and stderr."""
     try:
-        return _check_output(cmd).splitlines()[0].strip()
-    except (OSError, subprocess.CalledProcessError, IndexError):
+        proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    except OSError as exc:
+        raise RuntimeError(f"cannot run {cmd[0]}: {exc}") from exc
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"{cmd[0]} exited with status {proc.returncode}: {proc.stderr.strip() or '(no stderr)'}"
+        )
+    return proc.stdout
+
+
+def _first_line(cmd: list[str], env: dict[str, str] | None = None) -> str:
+    try:
+        return _check_output(cmd, env=env).splitlines()[0].strip()
+    except (RuntimeError, IndexError):
         return "unknown"
 
 
@@ -144,7 +193,7 @@ def _tree_state() -> str:
     """'clean', 'modified' (uncommitted changes), or 'unknown' (not a git checkout)."""
     try:
         out = _check_output(["git", "-C", str(REPO), "status", "--porcelain"])
-    except (OSError, subprocess.CalledProcessError):
+    except RuntimeError:
         return "unknown"
     return "modified" if out.strip() else "clean"
 
@@ -435,7 +484,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.input.is_file():
         parser.error(f"input is not a file: {args.input}")
-    run_dir, results = run(args.input.resolve(), args.workdir.resolve(), args.chunk_size, args.interrupt_chunk_size)
+    try:
+        run_dir, results = run(args.input.resolve(), args.workdir.resolve(), args.chunk_size,
+                               args.interrupt_chunk_size)
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        print("No record was written. The run did not complete.", file=sys.stderr)
+        return 2
     for r in results:
         print(f"{r['check']}  {r['status']:<12} {r['title']}: {r['details']}")
     print(f"\nRecord: {run_dir / 'record.md'}")
