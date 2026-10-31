@@ -90,9 +90,46 @@ in the reviewer line. Keep `results.json` with your own lab notes.
 
 | Date (UTC) | Component | Tool commit | OS | Python | Result | Reviewer |
 |------------|-----------|-------------|----|--------|--------|----------|
-| | | | | | | |
+| 2026-10-31 | Evidence package writer (M1.4) | `485d70f` | Windows 11 (10.0.26300) | 3.14.6 | V0–V6 PASS | Dielle De Noon |
 
-<!-- Paste record.md contents here, one per run. -->
+<!-- Paste record.md contents here, one per run, newest first. -->
+
+#### 2026-10-31: Evidence package writer (M1.4), Windows
+
+Scope: evidence-handling component only. This record does not validate any
+acquisition method, device, or OS version, and changes no validation status.
+
+| Field | Value |
+|-------|-------|
+| date_utc | `2026-10-31T21:55:51+00:00` |
+| tool_version | `0.1.0.dev0` |
+| tool_commit | `485d70f5c3ae3afe86b215fc2f5eb571e828dfac` |
+| tool_tree | `clean` |
+| os | `Windows 11 (10.0.26300)` |
+| machine | `AMD64` |
+| python | `3.14.6` |
+| input_name | `input.bin` |
+| input_size | `5242880` |
+| input_sha256_external | `d52e075826d65bd40edaf60afba64760c43fd221c098119679ff4972edb651fc` |
+| chunk_size | `67108864` |
+| interrupt_chunk_size | `1048576` |
+| chain_head_val_a | `7a0c030111faa67969099730d596c3f8df80ce5d2fb9269f321dacc34356e931` |
+| external tool | certutil -hashfile: `certutil (C:\WINDOWS\System32\certutil.exe)` |
+| external tool | PowerShell Get-FileHash: `Windows PowerShell 5.1.26100.9549 (C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe)` |
+
+| Check | Description | Result | Details |
+|-------|-------------|--------|---------|
+| V0 | Input unchanged by the run | **PASS** | external hash before and after the run agree |
+| V1 | Bytes stored exactly | **PASS** | external(input), external(stored), files.sha256 and manifest all agree |
+| V2 | Chunk hashes match the input | **PASS** | 1 chunk(s) of up to 67108864 bytes checked externally |
+| V3 | Abrupt interruption | **PASS** | process killed after 2097152 logged bytes; 2 CHUNK entries match the input; partial file kept (2621440 bytes) |
+| V4 | Tampering is detected | **PASS** | data change detected by external hash; audit change detected as BROKEN |
+| V5 | Files are read-only after finalization | **PASS** | every file marked read-only and write attempts refused |
+| V6 | Repeatable data hashes | **PASS** | files.sha256 and chunks.sha256 identical across two packages |
+
+Reviewed by: Dielle De Noon  Date: 2026-10-31  Notes: Synthetic random 5 MiB input. The
+input is smaller than one 64 MiB chunk, so V2 checked a single chunk; multi-chunk
+coverage was exercised only by V3 (1 MiB chunks).
 
 ---
 
