@@ -16,6 +16,7 @@ class ErrorHierarchyTests(unittest.TestCase):
             "IntegrityError",
             "ResearchModeRequiredError",
             "AuditLogError",
+            "EvidencePackageError",
         ):
             with self.subTest(name=name):
                 self.assertTrue(issubclass(getattr(errors, name), errors.CorroboraError))
@@ -26,6 +27,9 @@ class ErrorHierarchyTests(unittest.TestCase):
     def test_audit_log_error_is_not_an_integrity_error(self):
         # Misuse of the writer must not be confused with evidence failing verification.
         self.assertFalse(issubclass(errors.AuditLogError, errors.IntegrityError))
+
+    def test_evidence_package_error_is_not_an_integrity_error(self):
+        self.assertFalse(issubclass(errors.EvidencePackageError, errors.IntegrityError))
 
     def test_model_validation_error_is_value_error(self):
         self.assertTrue(issubclass(errors.ModelValidationError, ValueError))

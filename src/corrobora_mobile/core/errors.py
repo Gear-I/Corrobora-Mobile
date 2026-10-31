@@ -52,5 +52,13 @@ class AuditLogError(CorroboraError):
     """
 
 
+class EvidencePackageError(CorroboraError):
+    """The evidence package was used incorrectly (e.g. writing a file twice).
+
+    Distinct from ``IntegrityError``, which reports evidence that fails
+    verification.
+    """
+
+
 class ResearchModeRequiredError(CorroboraError):
     """A research-only method was requested without research mode (Section 7.3)."""
