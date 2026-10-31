@@ -90,6 +90,18 @@ class IntegrityStatus(StrEnum):
     INCOMPLETE = "INCOMPLETE"
 
 
+class CheckState(StrEnum):
+    """Result of one completeness check, C1-C10 (Section 5.2).
+
+    NOT_EVALUATED means the check could not be evaluated with the inputs
+    available. It is never treated as a pass.
+    """
+
+    PASS = "PASS"
+    FAIL = "FAIL"
+    NOT_EVALUATED = "NOT_EVALUATED"
+
+
 class EntryType(StrEnum):
     REGULAR = "regular"
     DIRECTORY = "directory"
