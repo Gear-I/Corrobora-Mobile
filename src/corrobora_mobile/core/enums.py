@@ -133,3 +133,27 @@ class RiskClass(StrEnum):
     PERSISTENT_CHANGE = "PERSISTENT_CHANGE"
     POSSIBLE_DATA_LOSS = "POSSIBLE_DATA_LOSS"
     POSSIBLE_DEVICE_DAMAGE = "POSSIBLE_DEVICE_DAMAGE"
+
+
+class AuditEntryType(StrEnum):
+    """Audit-log entry types (Section 5.6)."""
+
+    SESSION_START = "SESSION_START"
+    INTENT = "INTENT"
+    RESULT = "RESULT"
+    CHUNK = "CHUNK"
+    NOTE = "NOTE"
+    SEAL = "SEAL"
+
+
+class AuditLogState(StrEnum):
+    """Verifier classification of an audit log (Section 5.6).
+
+    SEALED and UNSEALED describe only the log's own consistency. Neither
+    proves the log was not regenerated in full; that needs the chain head
+    anchored outside the package.
+    """
+
+    SEALED = "SEALED"
+    UNSEALED = "UNSEALED"
+    BROKEN = "BROKEN"

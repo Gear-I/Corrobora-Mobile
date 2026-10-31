@@ -2,6 +2,8 @@ import unittest
 
 from corrobora_mobile.core.enums import (
     AcquisitionClass,
+    AuditEntryType,
+    AuditLogState,
     CompletenessStatus,
     ContentReliability,
     EntryOutcome,
@@ -75,6 +77,13 @@ class VocabularyTests(unittest.TestCase):
                 "POSSIBLE_DEVICE_DAMAGE",
             ],
         )
+
+    def test_audit_vocabulary(self):
+        self.assertEqual(
+            [t.value for t in AuditEntryType],
+            ["SESSION_START", "INTENT", "RESULT", "CHUNK", "NOTE", "SEAL"],
+        )
+        self.assertEqual({s.value for s in AuditLogState}, {"SEALED", "UNSEALED", "BROKEN"})
 
     def test_status_families_are_distinct_types(self):
         # Integrity, completeness and validation must never be interchangeable.
