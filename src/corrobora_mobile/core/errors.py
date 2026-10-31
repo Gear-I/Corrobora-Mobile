@@ -44,5 +44,13 @@ class IntegrityError(CorroboraError):
     """A hash, chain, or seal check failed. Always fails the acquisition."""
 
 
+class AuditLogError(CorroboraError):
+    """The audit log was used incorrectly (e.g. appending after sealing).
+
+    Distinct from ``IntegrityError``, which reports evidence that fails
+    verification.
+    """
+
+
 class ResearchModeRequiredError(CorroboraError):
     """A research-only method was requested without research mode (Section 7.3)."""
