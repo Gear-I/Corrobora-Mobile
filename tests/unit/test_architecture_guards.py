@@ -9,6 +9,7 @@ import unittest
 from pathlib import Path
 
 SRC = Path(__file__).resolve().parents[2] / "src" / "corrobora_mobile"
+VERIFIER = Path(__file__).resolve().parents[2] / "tools" / "verify_package.py"
 
 
 def _imported_modules(path: Path) -> set[str]:
@@ -38,6 +39,13 @@ class ArchitectureGuardTests(unittest.TestCase):
             for module in _imported_modules(path):
                 with self.subTest(file=path.name, module=module):
                     self.assertFalse(module.startswith("corrobora_mobile.platforms"))
+
+    def test_verifier_uses_only_the_standard_library(self):
+        # Section 5.7: verification must not depend on the code that wrote the package.
+        for module in _imported_modules(VERIFIER):
+            with self.subTest(module=module):
+                self.assertIn(module.split(".")[0], set(sys.stdlib_module_names))
+                self.assertFalse(module.startswith("corrobora_mobile"))
 
 
 if __name__ == "__main__":
