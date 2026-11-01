@@ -1,0 +1,34 @@
+{
+  "method_id": "android.emulator.adb_root_userdebug",
+  "platform": "android",
+  "applies_to": {
+    "manufacturer": "Android Emulator (Google)",
+    "model": "AVD",
+    "os_versions": [],
+    "build_type": ["userdebug"]
+  },
+  "physical_device": false,
+  "security_configuration": "Emulator; no hardware-backed TEE equivalence assumed",
+  "required_device_state": "Booted; user unlocked (for CE storage); adb authorized",
+  "required_privileges": "adbd running as root via `adb root`",
+  "max_acquisition_class": "PRIVILEGED_SELECTED_DIRECTORY",
+  "acquisition_scope": "/data only (M1)",
+  "device_modifications": [
+    "adbd restarted as root",
+    "UNVERIFIED: file access-time updates caused by reading files, depending on mount options",
+    "UNVERIFIED: any other side effects of the acquisition tooling"
+  ],
+  "known_limitations": [
+    "Not a physical device",
+    "Not an ordinary, unmodified, or locked device",
+    "No unallocated space or deleted-data recovery",
+    "TAR metadata limitations; see docs/ARCHITECTURE.md Section 5.3"
+  ],
+  "notes": [
+    "manufacturer and model are descriptive only and are not matched: the values an emulator reports have not yet been observed by this project",
+    "os_versions is empty: no OS version has been tested; a matching device is flagged as untested",
+    "UNVERIFIED methods may run only in research mode (docs/ARCHITECTURE.md Section 3.1)"
+  ],
+  "validation_status": "UNVERIFIED",
+  "validation_records": []
+}
