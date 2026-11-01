@@ -2,8 +2,8 @@
   "method_id": "android.emulator.adb_root_userdebug",
   "platform": "android",
   "applies_to": {
-    "manufacturer": "Android Emulator (Google)",
-    "model": "AVD",
+    "manufacturer": "Google",
+    "model": "sdk_gphone64_x86_64",
     "os_versions": [],
     "build_type": ["userdebug"]
   },
@@ -25,7 +25,8 @@
     "TAR metadata limitations; see docs/ARCHITECTURE.md Section 5.3"
   ],
   "notes": [
-    "manufacturer and model are descriptive only and are not matched: the values an emulator reports have not yet been observed by this project",
+    "manufacturer and model are descriptive only and are not matched: on 2026-11-01 an Android 17 (SDK 37) x86_64 Google APIs image (userdebug, dev-keys) and a Google Play image (user, release-keys) both reported ro.product.manufacturer=Google and ro.product.model=sdk_gphone64_x86_64, so these values cannot tell the build types apart",
+    "observed on both images: ro.kernel.qemu=1, ro.boot.qemu=1, ro.hardware=ranchu; adb serials (emulator-5554, emulator-5556) changed between runs and do not identify an image",
     "os_versions is empty: no OS version has been tested; a matching device is flagged as untested",
     "UNVERIFIED methods may run only in research mode (docs/ARCHITECTURE.md Section 3.1)"
   ],
