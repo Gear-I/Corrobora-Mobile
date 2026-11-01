@@ -151,8 +151,14 @@ are not currently implemented.
 
 | Platform | Research Status | FFS Acquisition |
 |----------|-----------------|-----------------|
-| Apple iOS | Planned | Not implemented |
-| Google Android | Planned | Not implemented |
+| Apple iOS | Initial research documented; no implementation | Not implemented |
+| Google Android | Emulator proof of concept in development | Not implemented |
+
+The first Android target is a privileged acquisition of `/data` from a
+`userdebug` Android Emulator image. That acquisition is classified
+`PRIVILEGED_SELECTED_DIRECTORY`, **not** FFS (see
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), Section 0.2). Its method
+status is **UNVERIFIED**.
 
 ### Important Compatibility Notice
 
@@ -180,28 +186,40 @@ deleted messages or other deleted artifacts.
 
 ### Phase 1 — Research and Architecture
 
-**Status: Planned**
+**Status: Complete (initial)**
 
-- [ ] Establish the project architecture.
-- [ ] Research documented iOS acquisition methods.
-- [ ] Research documented Android acquisition methods.
-- [ ] Define device compatibility requirements.
-- [ ] Design the modular FFS acquisition framework.
-- [ ] Establish evidence integrity requirements.
-- [ ] Develop an initial validation methodology.
+- [x] Establish the project architecture
+  ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)).
+- [x] Research documented iOS acquisition methods (initial survey;
+  no documented open method identified for A12 and later devices).
+- [x] Research documented Android acquisition methods (initial survey).
+- [x] Define device compatibility requirements.
+- [x] Design the modular FFS acquisition framework.
+- [x] Establish evidence integrity requirements.
+- [x] Develop an initial validation methodology
+  ([docs/VALIDATION.md](docs/VALIDATION.md)).
 
-### Phase 2 — FFS Proof of Concept
+### Phase 2 — Privileged Acquisition Proof of Concept (Milestone M1)
 
-**Status: Planned**
+**Status: In progress**
 
-- [ ] Identify a supported research device.
-- [ ] Establish a documented privileged acquisition method.
-- [ ] Develop the first FFS acquisition module.
-- [ ] Acquire filesystem data from a supported test device.
-- [ ] Preserve available filesystem metadata.
-- [ ] Generate SHA-256 evidence hashes.
-- [ ] Produce acquisition manifests and logs.
-- [ ] Validate acquisition results.
+The first proof of concept targets a `userdebug` Android Emulator,
+not a physical device, and acquires `/data` only. It is classified
+`PRIVILEGED_SELECTED_DIRECTORY`, not FFS.
+
+- [x] Identify a research target (Android Emulator, `userdebug` image).
+- [ ] Establish a documented privileged acquisition method
+  (documented and registered as UNVERIFIED; not yet implemented).
+- [ ] Develop the first privileged acquisition module
+  (device detection, access provider and acquirer: not started).
+- [ ] Acquire filesystem data from the test target.
+- [ ] Preserve available filesystem metadata (designed; not implemented).
+- [x] Generate SHA-256 evidence hashes (implemented and unit-tested;
+  not yet used on device data).
+- [x] Produce acquisition manifests and logs (implemented and
+  unit-tested; not yet used on device data).
+- [ ] Validate acquisition results (verification tools built; no
+  acquisition validated).
 
 ### Phase 3 — Expanded Device Support
 
@@ -228,33 +246,42 @@ deleted messages or other deleted artifacts.
 
 ## Technical Architecture
 
-The proposed architecture separates device communication,
-FFS acquisition, evidence handling, and validation.
+The architecture separates device communication, acquisition,
+evidence handling, compatibility and validation. The full design is in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+Current repository layout:
 
 ```text
 Corrobora-Mobile/
 │
 ├── docs/
-│   ├── PROJECT_CHARTER.md
-│   ├── ROADMAP.md
-│   ├── COMPATIBILITY.md
-│   ├── ACQUISITION_METHODS.md
-│   └── VALIDATION.md
+│   ├── ARCHITECTURE.md        # design, decisions, milestone M1
+│   ├── EVIDENCE_FORMAT.md     # evidence package specification
+│   └── VALIDATION.md          # validation rules and records
+│
+├── compatibility/
+│   └── methods/               # one reviewable record per method
 │
 ├── src/
 │   └── corrobora_mobile/
-│       ├── core/
-│       ├── acquisition/
-│       ├── evidence/
-│       ├── android/
-│       ├── ios/
-│       └── validation/
+│       ├── core/              # shared models, errors, clock, paths
+│       ├── audit/             # hash-chained audit log
+│       ├── evidence/          # write-once evidence package, hashing
+│       ├── acquisition/       # reconciliation and completeness checks
+│       └── compatibility/     # registry, assessment, gate
+│
+├── tools/
+│   ├── verify_package.py      # standalone verifier (standard library only)
+│   └── validate_evidence_component.py
 │
 └── tests/
 ```
 
-This structure represents the proposed architecture.
-Modules will be implemented and tested incrementally.
+Platform modules (Android detection, access providers and acquirers)
+have not been implemented yet. All implemented components are
+unit-tested on synthetic data only; that does not establish forensic
+validity.
 
 ---
 
@@ -395,9 +422,10 @@ See the `LICENSE` file for the applicable license terms.
 
 **Pre-Alpha — Research and Development**
 
-The project is currently establishing its technical
-architecture, acquisition research priorities,
-and forensic validation requirements.
+The architecture is established and the evidence-handling
+foundation (hashing, audit log, evidence package, completeness
+checks, standalone verifier, compatibility registry) is implemented
+and unit-tested. Device acquisition modules are not yet implemented.
 
 FFS acquisition functionality has not yet been
 implemented or validated.
