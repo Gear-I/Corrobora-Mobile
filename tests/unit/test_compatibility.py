@@ -42,7 +42,8 @@ class EmulatorRecordTests(unittest.TestCase):
         self.assertEqual(self.record.os_versions, ())
 
     def test_unverified_side_effects_are_labeled(self):
-        self.assertIn("adbd restarted as root", self.record.device_modifications)
+        self.assertIn("adbd restarted as root, then restarted as non-root (adb unroot) at teardown",
+                      self.record.device_modifications)
         self.assertTrue(any(m.startswith("UNVERIFIED:") for m in self.record.device_modifications))
 
     def test_registry_contains_only_the_emulator_method(self):

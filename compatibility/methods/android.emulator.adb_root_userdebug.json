@@ -14,7 +14,8 @@
   "max_acquisition_class": "PRIVILEGED_SELECTED_DIRECTORY",
   "acquisition_scope": "/data only (M1)",
   "device_modifications": [
-    "adbd restarted as root",
+    "adbd restarted as root, then restarted as non-root (adb unroot) at teardown",
+    "service.adb.root left at 0 after teardown where it was previously unset (observed 2026-11-09, Android 17 emulator)",
     "UNVERIFIED: file access-time updates caused by reading files, depending on mount options",
     "UNVERIFIED: any other side effects of the acquisition tooling"
   ],

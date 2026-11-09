@@ -1,13 +1,21 @@
-"""A deliberately narrow adb wrapper for read-only detection.
+"""A deliberately narrow adb wrapper.
 
-Only three commands can be issued through this module:
+Only these commands can be issued through this module:
 
 * ``adb version``                         -- host side only;
 * ``adb devices``                         -- host side only;
-* ``adb -s <serial> shell getprop <name>`` -- reads one system property.
+* ``adb -s <serial> shell getprop <name>`` -- reads one system property;
+* ``adb -s <serial> shell id``            -- reads the shell's identity;
+* ``adb -s <serial> wait-for-device``     -- waits for the connection;
+* ``adb -s <serial> root`` / ``unroot``   -- restart adbd as root / non-root.
 
-Nothing here can run ``adb root``, push or pull files, or run an arbitrary
-shell command. Inputs that reach the device shell are validated against
+``root`` and ``unroot`` change device state. They are called only by the
+adb-root provider (``providers/adb_root.py``), after the compatibility gate,
+and always inside audit-log INTENT/RESULT pairs. Their exit status must not
+be trusted: on a production build ``adb root`` printed "adbd cannot run as
+root in production builds" and still exited with 0 (observed 2026-11-09).
+
+Nothing here can push or pull files or run an arbitrary shell command. Inputs that reach the device shell are validated against
 strict patterns first, because ``adb shell`` passes its arguments to the
 device's shell as a command line.
 
@@ -100,6 +108,20 @@ class Adb:
     def getprop(self, serial: str, name: str) -> CommandRecord:
         return self._run(["-s", validate_serial(serial), "shell", "getprop",
                           validate_property_name(name)])
+
+    def shell_id(self, serial: str) -> CommandRecord:
+        return self._run(["-s", validate_serial(serial), "shell", "id"])
+
+    def wait_for_device(self, serial: str) -> CommandRecord:
+        return self._run(["-s", validate_serial(serial), "wait-for-device"])
+
+    def root(self, serial: str) -> CommandRecord:
+        """Changes device state. Use only through the adb-root provider."""
+        return self._run(["-s", validate_serial(serial), "root"])
+
+    def unroot(self, serial: str) -> CommandRecord:
+        """Changes device state. Use only through the adb-root provider."""
+        return self._run(["-s", validate_serial(serial), "unroot"])
 
 
 def parse_devices(stdout: bytes) -> list[tuple[str, str]]:
