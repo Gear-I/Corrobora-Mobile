@@ -244,6 +244,31 @@ not a physical device, and acquires `/data` only. It is classified
 
 ---
 
+## Trying It
+
+Corrobora Mobile has no acquisition capability yet. The `corrobora-mobile`
+command lets you try the parts that exist: device detection, the
+compatibility gate, and package verification.
+
+Requirements: Python 3.12 or later, and Android SDK Platform-Tools (`adb`)
+for the Android commands.
+
+```text
+git clone https://github.com/Gear-I/Corrobora-Mobile.git
+cd Corrobora-Mobile
+python -m pip install -e .
+
+corrobora-mobile --help
+corrobora-mobile devices                    # read-only
+corrobora-mobile detect --serial <serial>   # read-only
+corrobora-mobile verify <package-folder>
+```
+
+`corrobora-mobile provider-check` **changes device state** (it restarts
+`adbd` as root, then as non-root). Use it only on test emulators or devices
+you own or are authorized to modify. Its method is **UNVERIFIED** and runs
+only in research mode.
+
 ## Technical Architecture
 
 The architecture separates device communication, acquisition,

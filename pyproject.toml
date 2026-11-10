@@ -29,6 +29,9 @@ classifiers = [
     "Topic :: Security",
 ]
 
+[project.scripts]
+corrobora-mobile = "corrobora_mobile.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/Gear-I/Corrobora-Mobile"
 
