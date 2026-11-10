@@ -49,9 +49,14 @@ class TopLevelTests(unittest.TestCase):
 
     def test_unknown_command_or_option(self):
         self.assertEqual(run()[0], 2)
-        self.assertEqual(run("acquire")[0], 2)
+        self.assertEqual(run("bogus")[0], 2)
         self.assertEqual(run("--bogus", "devices")[0], 2)
         self.assertEqual(run("--adb")[0], 2)
+
+    def test_acquire_without_required_options_is_a_usage_error(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as caught:
+            cli.main(["--adb", "adb", "acquire"])
+        self.assertEqual(caught.exception.code, 2)
 
     def test_pyproject_declares_the_command(self):
         data = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))

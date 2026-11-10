@@ -11,7 +11,7 @@ approval.
 
 | Method ID | Stage | Status | Highest class |
 |-----------|-------|--------|---------------|
-| `android.emulator.adb_root_userdebug` | 3 Prototype (provider implemented; no acquirer yet) | UNVERIFIED | `PRIVILEGED_SELECTED_DIRECTORY` |
+| `android.emulator.adb_root_userdebug` | 3 Prototype (provider and one-folder acquirer implemented; acquirer not yet run on the emulator) | UNVERIFIED | `PRIVILEGED_SELECTED_DIRECTORY` |
 | `android.physical.shell_shared_storage` | 1 Proposal | UNVERIFIED | `SELECTED_DIRECTORY` |
 | `android.physical.magisk_su` | 1 Proposal | UNVERIFIED | `PRIVILEGED_SELECTED_DIRECTORY` |
 
@@ -61,7 +61,12 @@ credential-encrypted storage is plaintext to root while unlocked: A-09.
 
 **Device tools (observed).** toybox 0.8.13-android: `tar` with `--selinux`,
 `--sparse`, `--numeric-owner`, `-T`/`--null`; `stat -c` with `%C`
-(SELinux context) and whole-second timestamps; `find -printf` lacks `%y`.
+(SELinux context); `find -printf` lacks `%y`. Observation 3 (2026-11-09):
+`find -printf` writes NUL separators and handles any file name, but its
+`%T@` drops leading zeros of the fraction; `stat`'s full-form times have
+nine fractional digits and `%Z` is the change time; `tar --sparse` made no
+difference to the output (A-07). The sidecar route was tested end to end:
+the archive matched the device-side hash and the exit status read back.
 
 **Mounts (observed).** `/data` is ext4 mounted `noatime`, so reading does
 not update access times on this emulator (A-08). `/data/user/0` is the same
@@ -70,13 +75,15 @@ contents would be listed and archived twice.
 
 **Risk class.** `STATE_CHANGE` (reversible): `adbd` restarted as root and
 back; `service.adb.root` left at `0` (observed); sidecar files written to
-and deleted from `/data/local/tmp`.
+and deleted from `/data/local/tmp`, which changes that folder's
+modification and change times (recorded before and after each run).
 
 **Legal and licensing review.** Android SDK Platform-Tools and the Android
 Emulator licenses: not yet reviewed (D-01, D-02). The emulator is the
 developer's own test environment; no personal data.
 
-**Highest class.** `PRIVILEGED_SELECTED_DIRECTORY` (`/data` only).
+**Highest class.** `PRIVILEGED_SELECTED_DIRECTORY` (`/data` only). The M1.11
+acquirer takes one folder under `/data` with no other mount point inside it.
 
 ---
 

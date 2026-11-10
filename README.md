@@ -209,11 +209,15 @@ not a physical device, and acquires `/data` only. It is classified
 
 - [x] Identify a research target (Android Emulator, `userdebug` image).
 - [ ] Establish a documented privileged acquisition method
-  (documented and registered as UNVERIFIED; not yet implemented).
-- [ ] Develop the first privileged acquisition module
-  (device detection, access provider and acquirer: not started).
+  (documented, registered as UNVERIFIED, and implemented as the
+  `adb root` provider; not validated).
+- [ ] Develop the first privileged acquisition module (device detection,
+  the `adb root` provider, and an acquirer for one folder under `/data`
+  are implemented and unit-tested against a simulated emulator; whole
+  `/data` is not supported yet).
 - [ ] Acquire filesystem data from the test target.
-- [ ] Preserve available filesystem metadata (designed; not implemented).
+- [ ] Preserve available filesystem metadata (partly implemented: see
+  `METADATA_FIDELITY` in the acquirer; not yet tested on a device).
 - [x] Generate SHA-256 evidence hashes (implemented and unit-tested;
   not yet used on device data).
 - [x] Produce acquisition manifests and logs (implemented and
@@ -246,9 +250,11 @@ not a physical device, and acquires `/data` only. It is classified
 
 ## Trying It
 
-Corrobora Mobile has no acquisition capability yet. The `corrobora-mobile`
-command lets you try the parts that exist: device detection, the
-compatibility gate, and package verification.
+Corrobora Mobile has no validated acquisition capability. The
+`corrobora-mobile` command lets you try the parts that exist: device
+detection, the compatibility gate, package verification, and an
+**UNVERIFIED, research-only** acquisition of one folder under `/data`
+from a `userdebug` Android Emulator.
 
 Requirements: Python 3.12 or later, and Android SDK Platform-Tools (`adb`)
 for the Android commands.
@@ -264,10 +270,20 @@ corrobora-mobile detect --serial <serial>   # read-only
 corrobora-mobile verify <package-folder>
 ```
 
-`corrobora-mobile provider-check` **changes device state** (it restarts
-`adbd` as root, then as non-root). Use it only on test emulators or devices
-you own or are authorized to modify. Its method is **UNVERIFIED** and runs
-only in research mode.
+`corrobora-mobile provider-check` and `corrobora-mobile acquire`
+**change device state**: they restart `adbd` as root, then as non-root, and
+`acquire` also creates and deletes a folder in `/data/local/tmp`. Use them
+only on test emulators or devices you own or are authorized to modify.
+Their method is **UNVERIFIED** and runs only in research mode, for example:
+
+```text
+corrobora-mobile acquire --serial <serial> --path /data/system/users --output <folder>
+    --confirm-unlocked --research --authorization-reference <your-record-id>
+    --acknowledge-modifications
+```
+
+(one command line; wrapped here for reading). The result is labeled
+RESEARCH and classified `PRIVILEGED_SELECTED_DIRECTORY` at most.
 
 ## Technical Architecture
 
@@ -293,8 +309,9 @@ Corrobora-Mobile/
 │       ├── core/              # shared models, errors, clock, paths
 │       ├── audit/             # hash-chained audit log
 │       ├── evidence/          # write-once evidence package, hashing
-│       ├── acquisition/       # reconciliation and completeness checks
-│       └── compatibility/     # registry, assessment, gate
+│       ├── acquisition/       # reconciliation, completeness checks, archive reader
+│       ├── compatibility/     # registry, assessment, gate
+│       └── platforms/android/ # adb wrapper, detection, adb-root provider, acquirer
 │
 ├── tools/
 │   ├── verify_package.py      # standalone verifier (standard library only)
@@ -303,10 +320,9 @@ Corrobora-Mobile/
 └── tests/
 ```
 
-Platform modules (Android detection, access providers and acquirers)
-have not been implemented yet. All implemented components are
-unit-tested on synthetic data only; that does not establish forensic
-validity.
+Android detection, the `adb root` provider and the one-folder acquirer
+exist; there is no iOS code. All components are unit-tested on synthetic
+data or a simulated emulator; that does not establish forensic validity.
 
 ---
 
@@ -450,7 +466,9 @@ See the `LICENSE` file for the applicable license terms.
 The architecture is established and the evidence-handling
 foundation (hashing, audit log, evidence package, completeness
 checks, standalone verifier, compatibility registry) is implemented
-and unit-tested. Device acquisition modules are not yet implemented.
+and unit-tested. An UNVERIFIED, research-only acquirer for one folder
+under `/data` on a `userdebug` Android Emulator is implemented and
+unit-tested against a simulated emulator; it has not been validated.
 
 FFS acquisition functionality has not yet been
 implemented or validated.

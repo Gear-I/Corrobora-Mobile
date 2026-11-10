@@ -335,7 +335,16 @@ then, a verifier must report them as not checked:
   `format: "corrobora-mobile/reconciliation"`, `format_version: 1`. Its
   full layout will be specified with the acquirer.
 - **`enumeration/pre.jsonl`, `enumeration/post.jsonl`, `errors/` and
-  `plan/`.** Needed to recompute completeness.
+  `plan/`.** Needed to recompute completeness. The M1.11 acquirer writes:
+  `plan/plan.json`, `plan/mounts.txt`, `plan/session-id.txt`,
+  `plan/toybox-version.txt`, `plan/sidecar-parent-{before,after}.txt`;
+  `enumeration/{pre,post}-find.bin` and `{pre,post}-stat.txt` (raw device
+  output), and `enumeration/{pre,post}.jsonl` (merged: a header line with
+  `format: "corrobora-mobile/enumeration"`, `format_version: 1`, then one
+  JSON object per entry); `errors/<name>.stderr` and `errors/<name>.exit`
+  (sidecar contents, byte for byte); `data/archive.tar`. Their layouts are
+  documented in the code and will be specified here before the verifier
+  recomputes completeness.
 - **`hashes/entries.sha256`** (per-entry hashes read from the archive).
   Deferred. ARCHITECTURE.md Section 5.1 lists it and an earlier
   `streams.sha256`; in format version 1 `files.sha256` takes the place

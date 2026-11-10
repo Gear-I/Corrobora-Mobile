@@ -12,10 +12,12 @@
   "required_device_state": "Booted; user unlocked (for CE storage); adb authorized",
   "required_privileges": "adbd running as root via `adb root`",
   "max_acquisition_class": "PRIVILEGED_SELECTED_DIRECTORY",
-  "acquisition_scope": "/data only (M1)",
+  "acquisition_scope": "one folder under /data, with no other mount point inside it (M1.11); whole /data not yet",
   "device_modifications": [
     "adbd restarted as root, then restarted as non-root (adb unroot) at teardown",
     "service.adb.root left at 0 after teardown where it was previously unset (observed 2026-11-09, Android 17 emulator)",
+    "acquisition only: creates /data/local/tmp/<acquisition id>/ for the copy tool's error output and exit status (sidecar files), then deletes it",
+    "acquisition only: creating and deleting that folder changes the modification and change times of /data/local/tmp",
     "UNVERIFIED: file access-time updates caused by reading files, depending on mount options",
     "UNVERIFIED: any other side effects of the acquisition tooling"
   ],

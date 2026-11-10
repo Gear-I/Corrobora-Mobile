@@ -35,6 +35,16 @@ A further rule: without a post-acquisition enumeration, changes cannot be
 detected (C9 is not evaluated), so the best status is
 ``COMPLETENESS_UNVERIFIED``, never ``COMPLETE``.
 
+Added in M1.11 (proposed 2026-11-09):
+
+5. C2 also passes on a non-zero exit status when the acquirer supplies an
+   ``exit_status_explanation``. The acquirer may do so only when every
+   stderr line was classified as expected (for toybox ``tar``: one
+   "unknown file type '140000'" line per enumerated socket, plus its
+   "had errors" summary). The explanation is recorded in C2's details.
+6. Problems found while reading the archive (member names that do not
+   form a device path, repeated members) fail C4 with their description.
+
 No status certifies that content is reliable or consistent. In particular
 ``NO_CHANGE_DETECTED`` is limited by what the enumerations compare.
 """
@@ -136,6 +146,8 @@ class CopyReport:
     stderr_error_lines: tuple[str, ...] = ()
     stderr_unclassified_lines: tuple[str, ...] = ()
     truncated_members: tuple[bytes, ...] = ()
+    exit_status_explanation: str | None = None
+    archive_problems: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         for name in ("plan_recorded_before_first_read", "stream_ended_cleanly",
@@ -147,6 +159,17 @@ class CopyReport:
             raise ModelValidationError("exit_status must be an int or None")
         _require_lines(self.stderr_error_lines, "stderr_error_lines")
         _require_lines(self.stderr_unclassified_lines, "stderr_unclassified_lines")
+        _require_lines(self.archive_problems, "archive_problems")
+        if self.exit_status_explanation is not None:
+            if not isinstance(self.exit_status_explanation, str) or \
+                    not self.exit_status_explanation.strip():
+                raise ModelValidationError("exit_status_explanation must be a non-empty string")
+            if self.exit_status in (None, 0):
+                raise ModelValidationError("exit_status_explanation applies only to a "
+                                           "non-zero observed exit status")
+            if self.stderr_error_lines or self.stderr_unclassified_lines:
+                raise ModelValidationError("a non-zero exit status cannot be explained while "
+                                           "stderr has error or unclassified lines")
         if not isinstance(self.truncated_members, tuple):
             raise ModelValidationError("truncated_members must be a tuple")
         for p in self.truncated_members:
@@ -429,6 +452,20 @@ def _reconcile_entry(
                                content_reliability=reliability)
 
 
+def _c2(report: CopyReport) -> CheckResult:
+    if report.exit_status == 0:
+        return CheckResult(check_id="C2", state=CheckState.PASS)
+    if report.exit_status is None:
+        return CheckResult(check_id="C2", state=CheckState.FAIL,
+                           details=("exit status not observed",))
+    if report.exit_status_explanation is not None:
+        return CheckResult(check_id="C2", state=CheckState.PASS, details=(
+            f"copy process exited with status {report.exit_status}, explained: "
+            f"{report.exit_status_explanation}",))
+    return CheckResult(check_id="C2", state=CheckState.FAIL,
+                       details=(f"copy process exited with status {report.exit_status}",))
+
+
 def _evaluate_checks(report, audit_state, pre_ix, post_ix, entries, unenumerated,
                      out_of_scope_members, size_failures) -> tuple[CheckResult, ...]:
     def result(check_id: str, failures: list[str], pass_detail: str = "") -> CheckResult:
@@ -443,14 +480,13 @@ def _evaluate_checks(report, audit_state, pre_ix, post_ix, entries, unenumerated
     checks = [
         result("C1", [] if report.plan_recorded_before_first_read
                else ["scope and planned class were not recorded before the first data read"]),
-        result("C2", [] if report.exit_status == 0 else [
-            "exit status not observed" if report.exit_status is None
-            else f"copy process exited with status {report.exit_status}"]),
+        _c2(report),
         result("C3", [f"error: {line}" for line in report.stderr_error_lines]
                + [f"unclassified: {line}" for line in report.stderr_unclassified_lines]),
         result("C4", ([] if report.stream_ended_cleanly else ["stream did not end cleanly"])
                + ([] if report.archive_parsed_to_end else ["archive did not parse to its end marker"])
-               + [f"truncated member: {p!r}" for p in report.truncated_members]),
+               + [f"truncated member: {p!r}" for p in report.truncated_members]
+               + [f"archive: {problem}" for problem in report.archive_problems]),
         result("C5", [] if report.stream_hashes_match
                else ["streaming and at-rest hashes differ"]),
     ]
