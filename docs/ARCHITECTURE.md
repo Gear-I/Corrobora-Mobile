@@ -3,7 +3,14 @@
 **Document status:** PROPOSED — design only. Nothing described here is
 implemented, tested, or validated unless explicitly marked otherwise.
 
-**Revision:** 3 (2026-10-16). Revision 1 was merged to `main` in pull
+**Revision:** 4 (2026-11-09). Records the M1 observation results on the
+developer's Android 17 emulators (Section 8.4), the decisions taken during
+M1.5–M1.10 and on 2026-11-09 (Section 8.3), and the plan for a physical
+Android research device (Section 7.4). Method dossiers now live in
+[ACQUISITION_METHODS.md](ACQUISITION_METHODS.md). Implementation status is
+tracked in the README, not here.
+
+Earlier history: Revision 3 (2026-10-16). Revision 1 was merged to `main` in pull
 request #3 (commit `89d028e`). A later update recording the Section 8.3
 decisions (commit `24eb22c` on branch `docs/architecture`) was not part
 of that merge; this revision includes those decisions. Revision 2 was
@@ -957,8 +964,12 @@ Each method's dossier records:
 - **Personal devices:** a personal device (for example, the developer's
   iPhone 16 Pro Max) is never a research device. It is excluded from all
   research stages.
-- **Physical-device decision:** decided 2026-10-16. There are no research
-  devices for now (Section 8.3).
+- **Physical-device decision:** decided 2026-10-16: no research devices.
+  **Revised 2026-11-09:** the developer intends to obtain a dedicated test
+  Android phone for physical-device research (none in hand yet). Until one
+  is recorded in the private inventory, physical-device methods stay at
+  Stage 1 (dossiers in [ACQUISITION_METHODS.md](ACQUISITION_METHODS.md)).
+  A phone holding personal data is never a research device.
 
 ### 7.5 Read-Only Capability Probes
 
@@ -992,8 +1003,12 @@ never change a compatibility status on their own.
    version?~~ **Resolved:** Python 3.12+ (Section 8.3).
 2. ~~Which host OS is supported first?~~ **Resolved:** Windows first, with
    device-free unit tests also run on Linux in CI (Section 8.3).
-3. Can `adb exec-out` carry a binary tar stream reliably, while capturing
-   on-device stderr separately and without writing to the device? (A-02, A-03)
+3. ~~Can `adb exec-out` carry a binary tar stream reliably, while capturing
+   on-device stderr separately and without writing to the device?~~
+   **Answered for one emulator image (2026-11-09):** the stream is
+   byte-exact, but `exec-out` neither returns the exit status nor keeps
+   stderr separate, so sidecar files on the device are used (Section 8.3;
+   A-02, A-03).
 4. Which attributes does the emulator's on-device `tar` actually preserve?
    (A-04, A-07)
 5. Does an unlocked, booted Google APIs emulator expose CE storage in
@@ -1005,12 +1020,14 @@ never change a compatibility status on their own.
    disk images [VERIFIED-SOURCE]. Whether CC0 covers the contributed Joshua
    Hickman images is unconfirmed. (A-14)
 8. ~~What authorized physical research devices will be available?~~
-   **Resolved for now:** none (Section 8.3).
+   **Revised 2026-11-09:** a dedicated test Android phone is planned; none
+   in hand yet (Section 7.4).
 9. For locked or unmodified devices: which documented, lawful,
    reproducible methods exist at all for current OS versions? This is
    open research. No feasibility is assumed.
 10. Which mechanism produces the independent enumeration on Android, and
-    with what timestamp precision? (A-06)
+    with what timestamp precision? **Partly answered (2026-11-09):** toybox
+    `stat -c`, whole-second timestamps, on one emulator image (A-06).
 11. May the repository ever contain vulnerability-exploiting code, or only
     wrappers around separately obtained tools? (Section 7.3; decision required)
 12. Which external anchoring options (RFC 3161 timestamping, signatures)
@@ -1024,6 +1041,16 @@ never change a compatibility status on their own.
 | 2026-10-16 | Host OS: Windows first; device-free unit tests also run on Linux in CI | Emulator integration tests run on the developer's Windows machine. |
 | 2026-10-16 | Physical research devices: none for now | M1 is emulator-only. |
 | 2026-10-16 | GPL-3.0 dependencies (e.g. pymobiledevice3): decision deferred | Revisit when iOS work begins; legal review recommended. Not needed for M1. |
+| 2026-10-31 | Reconciliation rules for cases not covered by Section 5.2 | Deleted during acquisition → ERROR; unenumerated archive member → change; out-of-scope member → fails C6; no pre-enumeration + known failure → PARTIAL; no post-enumeration → at best COMPLETENESS_UNVERIFIED. Recorded in M1.5. |
+| 2026-11-01 | Verifier scope: integrity now; completeness reported "not recomputed" (exit bit 2 always set) until the enumeration format is specified | M1.6. |
+| 2026-11-01 | Compatibility matching on platform, emulator/physical and build type; manufacturer and model not matched; untested OS versions match with a warning; UNVERIFIED methods run only in research mode | M1.7. |
+| 2026-11-01 | Devices are identified by properties, never by `adb` serial; `is_emulator` is YES only from `qemu` properties, otherwise UNKNOWN | M1.8; serials were observed to change between runs. |
+| 2026-11-09 | `adb root` success is judged only by `id` reporting uid 0; its exit status is not trusted | M1.9; a `user` build refused with exit status 0. |
+| 2026-11-09 | Unlock precondition: `sys.user.0.ce_available` = `true` **and** operator attestation | M1.9; property meaning on locked devices unverified (A-18). |
+| 2026-11-09 | **Known deviation:** M1.9 placed the `adb root` provider in `platforms/android/providers/`, not `platforms/<os>/research/` as Stage 3 (Section 7.1) and Section 7.3 describe | Open: either move it or amend Section 7.1. Not changed by this revision. |
+| 2026-11-09 | Acquisition transport: `tar` over `adb exec-out`; stderr and exit status written to sidecar files in `/data/local/tmp/<acquisition_id>/`, read back, then deleted; the folder is excluded from scope by a rule | `exec-out` returns no exit status and mixes stderr into the stream (A-03). |
+| 2026-11-09 | `/data/user/0` (the same filesystem mounted again inside `/data`) is excluded from M1 scope by a rule, so app data is acquired once, from `/data/data` | Observed in the mount table; Section 5 nested-mount rule. |
+| 2026-11-09 | Physical Android research device planned (none yet) | Section 7.4. |
 
 ### 8.4 Register of Unverified Assumptions and Dependencies
 
@@ -1033,26 +1060,30 @@ testing. The register is the single list to close out.
 | ID | Assumption or dependency | How it will be resolved |
 |----|-------------------------|------------------------|
 | A-01 | No public, open-source FFS method exists for A18 Pro / iOS 26.x. | Literature review; revisit periodically. |
-| A-02 | `adb exec-out` transfers a binary stream unmodified on a Windows host. | M1 test: compare the host-side hash to the on-device hash of a known file. |
-| A-03 | On-device stderr can be captured separately without writing to the device. | M1 test of candidate approaches; document the chosen one. |
-| A-04 | The emulator's toybox `tar` matches the `master` source features in 5.3.2. | Capture `tar --help` and the toybox version; test each feature. |
-| A-05 | Effect of unreadable files on toybox `tar`'s exit status. | M1 test with a deliberately unreadable planted file. |
-| A-06 | An on-device enumeration tool is available (e.g. toybox `find`/`stat`), with usable output formats and timestamp precision. | M1 test; document the exact command. |
+| A-02 | `adb exec-out` transfers a binary stream unmodified on a Windows host. | **Observed 2026-11-09 (one Android 17 emulator image, Platform-Tools 37.0.1):** yes, when the command writes nothing to stderr: 605,184 bytes, host SHA-256 equal to the device's, two runs identical. `adb shell` and `adb shell -T` alter the bytes. |
+| A-03 | On-device stderr can be captured separately without writing to the device. | **Observed 2026-11-09: not with `exec-out`**, which mixes stderr into the stream and always returns exit status 0. Superseded by the sidecar-file decision (Section 8.3). |
+| A-04 | The emulator's toybox `tar` matches the `master` source features in 5.3.2. | **Partly observed 2026-11-09:** toybox 0.8.13-android; `--help` lists `--selinux`, `--sparse`, `--numeric-owner`, `-T`, `--null`. Behaviour of each feature still to be tested. |
+| A-05 | Effect of unreadable files on toybox `tar`'s exit status. | **Partly observed 2026-11-09:** a missing path gives "No such file or directory" plus "had errors" and exit status 1; a socket gives "unknown file type '140000'" **without naming the file**, exit status 1. Unreadable planted file still to be tested. |
+| A-06 | An on-device enumeration tool is available (e.g. toybox `find`/`stat`), with usable output formats and timestamp precision. | **Partly observed 2026-11-09:** `stat -c '%n\|%F\|%s\|%Y\|%Z\|%X\|%i\|%u\|%g\|%a\|%h\|%C'` works; timestamps are whole seconds; `find -printf` lacks `%y`. Exact command and handling of unusual file names still to be decided. |
 | A-07 | `tar --sparse` and `--selinux` work as described on the emulator image. | M1 test with planted sparse and labeled files. |
-| A-08 | Whether reading files under `/data` updates atime (depends on mount options). | Capture the mount table; compare atime in pre- and post-enumeration. |
+| A-08 | Whether reading files under `/data` updates atime (depends on mount options). | **Observed 2026-11-09:** `/data` is mounted `noatime` on the emulator, so reads should not update atime. Confirm by comparing pre- and post-enumeration. |
 | A-09 | An unlocked Google APIs emulator exposes CE storage in plaintext to root. | M1 test with a planted CE-stored file. |
-| A-10 | The Android emulator image actually uses FBE. | Check the emulator's encryption properties; record in identity. |
-| A-11 | Python 3.12+, Android Platform-Tools, and the Android Emulator run together on the Windows host. | M1 environment setup record. |
+| A-10 | The Android emulator image actually uses FBE. | **Observed 2026-11-09:** `ro.crypto.state=encrypted`, `ro.crypto.type=file`. |
+| A-11 | Python 3.12+, Android Platform-Tools, and the Android Emulator run together on the Windows host. | **Observed 2026-11:** Python 3.14, Platform-Tools 37.0.1 and the Android Emulator (Android 17 images) on Windows 10.0.26300. |
 | A-12 | The device-side effects of iOS pairing. | Literature review before any iOS detection work. |
-| A-13 | Bootloader unlocking wipes user data on target Android devices. | Device-specific documentation review before any physical Android research. |
+| A-13 | Bootloader unlocking wipes user data on target Android devices. | AOSP documentation says devices should perform a factory data reset on unlock (ACQUISITION_METHODS.md). Confirm for the specific device before use. |
 | A-14 | The license terms for Joshua Hickman's images on Digital Corpora. | Read the dataset pages; ask the maintainers if unclear. |
 | A-15 | A suitable RFC 3161 Time-Stamp Authority and client library exist. | Separate proposal; not needed for M1. |
 | A-16 | A signature library (new dependency) is acceptable. | Separate proposal; not needed for M1. |
 | A-17 | Windows `Get-FileHash` can check the `sha256sum`-style hash files. | Write and test a procedure in `EVIDENCE_FORMAT.md`. |
+| A-18 | `sys.user.0.ce_available` distinguishes a locked device (credential-encrypted storage unavailable) from an unlocked one. | Observed only as `true` on unlocked emulators; test on a locked device (PIN set, rebooted, not unlocked). |
+| A-19 | A cold boot resets `service.adb.root` to unset. | Observed only across runs without a reboot (value stayed `0`); test with a cold boot. |
+| A-20 | Why `adb shell` and `adb shell -T` alter binary output on Windows. | Not needed for M1 (data never uses `adb shell`); investigate only if a use arises. |
+| A-21 | The `shell` user can read shared storage and write `/data/local/tmp` on physical phones. | Test on a physical research device (route A). |
 | D-01 | **Dependency:** Android SDK Platform-Tools (`adb`); license not yet reviewed. | License review before M1 integration tests. |
 | D-02 | **Dependency:** Android Emulator and Google APIs system image; license not yet reviewed. | License review before M1 integration tests. |
 | D-03 | **Dependency:** toybox on the emulator image (part of Android, not shipped by this project). | Record the version as evidence (A-04). |
-| D-04 | **Dependency:** the CodeQL workflow scans only GitHub Actions files today. Python scanning must be added with the first Python code. | Separate CI proposal alongside M1 code. |
+| D-04 | **Dependency:** the CodeQL workflow scans only GitHub Actions files today. Python scanning must be added with the first Python code. | **Resolved:** the CodeQL workflow scans GitHub Actions and Python. |
 
 ---
 
