@@ -268,7 +268,13 @@ corrobora-mobile --help
 corrobora-mobile devices                    # read-only
 corrobora-mobile detect --serial <serial>   # read-only
 corrobora-mobile verify <package-folder>
+corrobora-mobile gui                        # read-only window
 ```
+
+`corrobora-mobile gui` opens a window for the same read-only steps: device
+list, detection with the compatibility gate decision, and package
+verification. It needs Python's tkinter (check with `python -m tkinter`).
+It cannot change a device.
 
 `corrobora-mobile provider-check` and `corrobora-mobile acquire`
 **change device state**: they restart `adbd` as root, then as non-root, and
@@ -311,6 +317,7 @@ Corrobora-Mobile/
 │       ├── evidence/          # write-once evidence package, hashing
 │       ├── acquisition/       # reconciliation, completeness checks, archive reader
 │       ├── compatibility/     # registry, assessment, gate
+│       ├── gui/               # read-only window (tkinter)
 │       └── platforms/android/ # adb wrapper, detection, adb-root provider, acquirer
 │
 ├── tools/

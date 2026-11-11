@@ -8,6 +8,7 @@ A thin front end over existing code; it adds no device capability.
     corrobora-mobile provider-check --serial S --output DIR [--research ...]
     corrobora-mobile acquire --path /data/FOLDER --output DIR [--research ...]
     corrobora-mobile verify PACKAGE [--chain-head HEX] [--json FILE]
+    corrobora-mobile gui                           read-only window (devices, detect, verify)
 
 ``devices`` and ``detect`` are read-only. ``provider-check`` and ``acquire``
 CHANGE DEVICE STATE (adbd is restarted as root, then non-root; ``acquire``
@@ -41,6 +42,7 @@ Commands:
   provider-check   establish and release adb root on a userdebug device (CHANGES DEVICE STATE)
   acquire          acquire one folder under /data from a userdebug emulator (CHANGES DEVICE STATE)
   verify           verify an evidence package with the standalone verifier
+  gui              open the read-only window (devices, detect, verify)
 
 Options:
   --config FILE    corrobora.toml with adb_path / output_dir
@@ -51,7 +53,7 @@ Options:
 Pre-alpha research software. No acquisition method is validated.
 """
 
-COMMANDS = ("devices", "detect", "provider-check", "acquire", "verify")
+COMMANDS = ("devices", "detect", "provider-check", "acquire", "verify", "gui")
 
 
 def default_adb_candidates() -> list[str]:
@@ -82,27 +84,39 @@ def verifier_path() -> Path:
 
 
 def _devices(adb_path: str, argv: list[str]) -> int:
-    from corrobora_mobile.platforms.android.adb import Adb, parse_devices
+    from corrobora_mobile.platforms.android.adb import Adb
+    from corrobora_mobile.platforms.android.detection import list_devices
 
     if argv and argv[0] in ("-h", "--help"):
         print("usage: corrobora-mobile devices\n\nList adb devices with build type and model. "
               "Read-only: runs only `adb devices` and `getprop`.")
         return 0
-    adb = Adb(adb_path)
-    record = adb.devices()
-    devices = parse_devices(record.stdout)
-    if not devices:
+    rows = list_devices(Adb(adb_path))
+    if not rows:
         print("No devices. Start an emulator (or connect a device with USB debugging authorized).")
         return 0
     print(f"{'SERIAL':<22}{'STATE':<14}{'BUILD TYPE':<12}MODEL")
-    for serial, state in devices:
-        build = model = "-"
-        if state == "device":
-            build = adb.getprop(serial, "ro.build.type").stdout.decode(errors="replace").strip() or "?"
-            model = adb.getprop(serial, "ro.product.model").stdout.decode(errors="replace").strip() or "?"
-        print(f"{serial:<22}{state:<14}{build:<12}{model}")
+    for r in rows:
+        print(f"{r.serial:<22}{r.state:<14}{r.build_type:<12}{r.model}")
     print("\nSerials are connection details, not identifiers; they can change between runs.")
     return 0
+
+
+def _gui(adb_path: str, argv: list[str]) -> int:
+    if argv and argv[0] in ("-h", "--help"):
+        print("usage: corrobora-mobile [--adb PATH] gui\n\nOpen the read-only window: device "
+              "list, detection and gate decision, package verification. It never changes a device.")
+        return 0
+    if argv:
+        print(f"corrobora-mobile gui: unexpected arguments: {' '.join(argv)}", file=sys.stderr)
+        return 2
+    try:
+        from corrobora_mobile.gui import app
+    except ImportError as exc:  # tkinter is optional in some Python installations
+        print(f"error: the GUI needs tkinter, which this Python does not have ({exc}). "
+              "Check with: python -m tkinter", file=sys.stderr)
+        return 2
+    return app.main(adb_path)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -142,6 +156,8 @@ def main(argv: list[str] | None = None) -> int:
     except CorroboraError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+    if command == "gui":
+        return _gui(adb_path, rest)
     if command == "devices":
         try:
             return _devices(adb_path, rest)
