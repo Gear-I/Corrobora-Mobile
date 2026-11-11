@@ -6,10 +6,12 @@ A thin front end over existing code; it adds no device capability.
     corrobora-mobile devices                       list adb devices (read-only)
     corrobora-mobile detect [--serial S] [--save DIR]
     corrobora-mobile provider-check --serial S --output DIR [--research ...]
+    corrobora-mobile acquire --path /data/FOLDER --output DIR [--research ...]
     corrobora-mobile verify PACKAGE [--chain-head HEX] [--json FILE]
 
-``devices`` and ``detect`` are read-only. ``provider-check`` CHANGES DEVICE
-STATE (it restarts adbd as root, then non-root); see its --help.
+``devices`` and ``detect`` are read-only. ``provider-check`` and ``acquire``
+CHANGE DEVICE STATE (adbd is restarted as root, then non-root; ``acquire``
+also creates and deletes a folder in /data/local/tmp); see their --help.
 ``verify`` runs the standalone verifier (tools/verify_package.py) in a
 separate Python process, so verification still does not depend on this
 package's code.
@@ -37,6 +39,7 @@ Commands:
   devices          list connected adb devices with build type and model (read-only)
   detect           device identity, compatibility assessment and gate decision (read-only)
   provider-check   establish and release adb root on a userdebug device (CHANGES DEVICE STATE)
+  acquire          acquire one folder under /data from a userdebug emulator (CHANGES DEVICE STATE)
   verify           verify an evidence package with the standalone verifier
 
 Options:
@@ -48,7 +51,7 @@ Options:
 Pre-alpha research software. No acquisition method is validated.
 """
 
-COMMANDS = ("devices", "detect", "provider-check", "verify")
+COMMANDS = ("devices", "detect", "provider-check", "acquire", "verify")
 
 
 def default_adb_candidates() -> list[str]:
@@ -150,6 +153,9 @@ def main(argv: list[str] | None = None) -> int:
     if command == "detect":
         from corrobora_mobile.platforms.android import detection
         return detection.main(rest)
+    if command == "acquire":
+        from corrobora_mobile.platforms.android import acquirer
+        return acquirer.main(rest)
     from corrobora_mobile.platforms.android.providers import adb_root
     return adb_root.main(rest)
 

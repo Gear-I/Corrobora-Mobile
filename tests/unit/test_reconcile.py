@@ -287,5 +287,32 @@ class SerializationTests(unittest.TestCase):
         json.dumps(r.to_dict())
 
 
+
+class M111RuleTests(unittest.TestCase):  # rules 5 and 6, added in M1.11
+    def test_explained_non_zero_exit_passes_c2(self):
+        result = run(report=report(exit_status=1, exit_status_explanation="1 socket skipped"))
+        c2 = result.check("C2")
+        self.assertIs(c2.state, CheckState.PASS)
+        self.assertIn("1 socket skipped", c2.details[0])
+        self.assertIs(result.status, CompletenessStatus.COMPLETE)
+
+    def test_unexplained_non_zero_exit_still_fails(self):
+        self.assertIs(run(report=report(exit_status=1)).status, CompletenessStatus.PARTIAL)
+
+    def test_explanation_cannot_hide_errors(self):
+        for bad in (dict(exit_status=0), dict(exit_status=None),
+                    dict(exit_status=1, stderr_error_lines=("x",)),
+                    dict(exit_status=1, stderr_unclassified_lines=("y",)),
+                    dict(exit_status=1, exit_status_explanation=" ")):
+            with self.subTest(bad=bad), self.assertRaises(ModelValidationError):
+                report(**{"exit_status_explanation": "because", **bad})
+
+    def test_archive_problems_fail_c4(self):
+        result = run(report=report(archive_problems=("member appears more than once: x",)))
+        self.assertIs(result.check("C4").state, CheckState.FAIL)
+        self.assertIn("archive: member appears more than once: x", result.check("C4").details)
+        self.assertIs(result.status, CompletenessStatus.PARTIAL)
+
+
 if __name__ == "__main__":
     unittest.main()
