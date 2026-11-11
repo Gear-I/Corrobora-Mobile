@@ -1055,6 +1055,7 @@ never change a compatibility status on their own.
 | 2026-11-09 | M1.11 acquires one folder under `/data`; a scope with another mount point inside it, or overlapping `/data/local/tmp`, is refused before any device change | Exclusion support (needed for whole `/data` and `/data/user/0`) is a later step. The archive is `data/archive.tar`, not `data/ffs.tar` (Section 9), because the class is not FFS. |
 | 2026-11-09 | Reconciliation rule 5: C2 may pass on a non-zero exit status only with an explanation, given only when every tar stderr line is an expected socket line (count equal to the enumerated sockets) or the "had errors" summary. Rule 6: archive problems fail C4 | toybox `tar` exits 1 when it skips a socket (observed). Recorded in `reconcile.py`. |
 | 2026-11-09 | Device shell commands come only from `platforms/android/commands.py`; `Adb` rejects anything else | Keeps operator text and device-supplied names out of the device shell. |
+| 2026-11-10 | GUI toolkit: tkinter (standard library); first version read-only (devices, detection and gate, verification) | Chosen by the project owner over PySide6, which would add a large LGPLv3 dependency. The GUI calls the same functions as the command line; a test forbids it from importing the provider or acquirer. |
 
 ### 8.4 Register of Unverified Assumptions and Dependencies
 

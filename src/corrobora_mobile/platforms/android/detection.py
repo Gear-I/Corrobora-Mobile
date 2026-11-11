@@ -160,8 +160,59 @@ def save_to_package(package: Any, result: DetectionResult) -> None:
 # -- command line ------------------------------------------------------------------------
 
 
-def main(argv: list[str] | None = None) -> int:
+@dataclass(frozen=True, slots=True)
+class DeviceRow:
+    """One line of ``adb devices``, with build type and model for ready devices."""
+
+    serial: str
+    state: str
+    build_type: str
+    model: str
+
+
+def list_devices(adb: Adb) -> list[DeviceRow]:
+    """``adb devices``, then ``getprop`` of build type and model for each ready device.
+
+    Read-only. Used by the ``devices`` command and the GUI.
+    """
+    rows = []
+    for serial, state in parse_devices(adb.devices().stdout):
+        build = model = "-"
+        if state == "device":
+            build = adb.getprop(serial, "ro.build.type").stdout.decode(errors="replace").strip() or "?"
+            model = adb.getprop(serial, "ro.product.model").stdout.decode(errors="replace").strip() or "?"
+        rows.append(DeviceRow(serial=serial, state=state, build_type=build, model=model))
+    return rows
+
+
+@dataclass(frozen=True, slots=True)
+class MethodSummary:
+    """A method's assessment for one identity, and the gate decision in each mode."""
+
+    assessment: Any            # compatibility.Assessment
+    gate_normal: Any           # compatibility.GateDecision
+    gate_research: Any
+
+    @property
+    def details(self) -> tuple[str, ...]:
+        a = self.assessment
+        return (*a.mismatches, *a.unknowns, *a.warnings)
+
+
+def summarize_methods(identity: DeviceIdentity, registry: Any = None) -> list[MethodSummary]:
+    """Assess every registered method and run the gate in normal and research mode.
+
+    Read-only. Used by ``detect`` and the GUI, so both show the same decision.
+    """
     from corrobora_mobile.compatibility import gate, load_registry
+
+    registry = registry if registry is not None else load_registry()
+    return [MethodSummary(assessment=a, gate_normal=gate(a, research_mode=False),
+                          gate_research=gate(a, research_mode=True))
+            for a in registry.assess(identity)]
+
+
+def main(argv: list[str] | None = None) -> int:
     from corrobora_mobile.core.clock import SystemClock
     from corrobora_mobile.evidence import EvidencePackage
 
@@ -187,17 +238,15 @@ def main(argv: list[str] | None = None) -> int:
     for note in result.notes:
         print(f"  note: {note}")
 
-    registry = load_registry()
-    assessments = registry.assess(result.identity)
-    if not assessments:
+    summaries = summarize_methods(result.identity)
+    if not summaries:
         print("\nNo compatibility record for this platform: UNSUPPORTED.")
-    for a in assessments:
+    for s in summaries:
+        a = s.assessment
         print(f"\nMethod {a.method_id}: status {a.validation_status.value}, match {a.matches.value}")
-        for line in (*a.mismatches, *a.unknowns, *a.warnings):
+        for line in s.details:
             print(f"  - {line}")
-        for research in (False, True):
-            d = gate(a, research_mode=research)
-            mode = "research mode requested" if research else "normal mode"
+        for mode, d in (("normal mode", s.gate_normal), ("research mode requested", s.gate_research)):
             print(f"  gate ({mode}): {'ALLOWED' if d.allowed else 'REFUSED'} -- {d.reason}")
 
     if args.save is not None:
