@@ -3,7 +3,7 @@
 | File | Content |
 |------|---------|
 | `Corrobora_Mobile_logo.png` | Original logo. Contains the Apple logo and the Android robot. |
-| `Corrobora_Mobile_logo_no_platform_marks.png` | The same logo with those two marks removed from the phone screen. Used by the GUI. |
+| `Corrobora_Mobile_logo_no_platform_marks.png` | The same logo with those two marks removed from the phone screen. Used by the README and the GUI. |
 
 ## How the version without platform marks was made (2026-11-10)
 
