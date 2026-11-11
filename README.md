@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/Logo_Icon/Corrobora_Mobile_logo.png" alt="Corrobora Mobile logo" width="220">
+  <img src="docs/Logo_Icon/Corrobora_Mobile_logo_no_platform_marks.png" alt="Corrobora Mobile logo" width="220">
 </p>
 
 # Corrobora Mobile
